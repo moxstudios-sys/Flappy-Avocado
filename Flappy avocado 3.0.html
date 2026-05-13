@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>FLAPPY AVOCADO - NO LOADING</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gb-darkest: #0f380f;
+            --gb-dark: #306230;
+            --gb-light: #8bac0f;
+            --gb-lightest: #9bbc0f;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Jersey 10', sans-serif;
+            overflow: hidden;
+            color: var(--gb-darkest);
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 400px;
+            height: 320px;
+            background-color: var(--gb-lightest);
+            border: 12px solid #333;
+            border-bottom-width: 45px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            image-rendering: pixelated;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hud {
+            position: absolute;
+            top: 10px;
+            font-size: 38px;
+            letter-spacing: 2px;
+            z-index: 20;
+            background: transparent;
+        }
+
+        .screen-text {
+            background: var(--gb-lightest);
+            padding: 16px;
+            border: 4px solid var(--gb-darkest);
+            font-size: 32px;
+            display: none;
+            line-height: 1.1;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+
+        #countdown-text {
+            font-size: 120px;
+            color: var(--gb-darkest);
+            position: absolute;
+            display: none;
+            text-shadow: 4px 4px var(--gb-light);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas" width="400" height="320"></canvas>
+    
+    <div id="ui-layer">
+        <div id="score-display" class="hud">000</div>
+        <div id="countdown-text">3</div>
+        <div id="msg" class="screen-text"></div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const msg = document.getElementById('msg');
+const countdownEl = document.getElementById('countdown-text');
+const scoreDisplay = document.getElementById('score-display');
+
+const P = { d1: '#0f380f', d2: '#306230', l1: '#8bac0f', l2: '#9bbc0f' };
+const COLOR_DARK = "#143511"; 
+const COLOR_LIGHT = "#91B31E"; 
+
+// --- AUDIO (Trompeta y Música) ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let musicInterval = null;
+
+function playTrumpet(isFinal) {
+    if(!audioCtx) audioCtx = new AudioCtx();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth'; 
+    osc.frequency.setValueAtTime(isFinal ? 523.25 : 392.00, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (isFinal ? 0.8 : 0.3));
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + (isFinal ? 0.8 : 0.3));
+}
+
+const NOTES = { A2: 110.00, Bb2: 116.54, C3: 130.81, D3: 146.83, Eb3: 155.56, E3: 164.81, F3: 174.61, G3: 196.00, Ab3: 207.65, A3: 220.00, B3: 246.94, C4: 261.63 };
+const SONG = ['A2', 'E3', 'A2', 'F3', 'E3', 'C3', 'Bb2', 'E3', 'A2', 'Eb3', 'A2', 'D3', 'C3', 'Ab3', 'G3', 'E3'];
+let currentNote = 0;
+
+function playTone(freq, type, vol, dur) {
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function startMusic() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    if (musicInterval) clearInterval(musicInterval);
+    musicInterval = setInterval(() => {
+        if (state === 'PLAY' && avocado.alive) {
+            playTone(NOTES[SONG[currentNote]], 'triangle', 0.06, 0.4);
+            currentNote = (currentNote + 1) % SONG.length;
+        }
+    }, 250);
+}
+
+// --- GAME STATE ---
+let state = 'START'; 
+let score = 0; 
+let frames = 0;
+let currentSpeed = 2.4; 
+let bgX = 0;
+let bgAlphaOrg = 1.0; 
+let bgAlphaGeo = 0.0;
+let bgAlphaChains = 0.0;
+
+let avocado = { x: 70, y: 150, w: 30, h: 40, v: 0, gravity: 0.24, jump: -4.5, alive: true };
+let obstacles = [];
+let particles = [];
+
+// Paths
+const pathAvo = new Path2D("m89.7 56.3v-9.9h-4.7v-4.6h-4.4v-5.1h-5.3v-23.5h-4.7v-4.4h-4.9v-4.4h-32.1v4.4h-5.1v4.4h-4.4v23.5h-4.4v4.9h-5.1v4.8h-4.5v9.6h-4.4v52.3h4.3v9.4h9.6v4.4h9.9-1.1v4.6h42.8-0.6v-4.4h10.2v-4.4h8.9v-9.6h5.3v-52h-5.3z");
+const pathFace = new Path2D("m75.1 70.4v-9.6h-4.5v-4.2h-4.9v-5.5h-32.1v5.1h-5.1v4.5h-4.4v9.7h-4.4v18.6h4.4v10h4.4v4.9h9.6v4.4h23.3v-4.5h9.2v-4.8h4.4v-10h5.1v-18.6h-5zm-41.6-4.6h9.6v9h-9.6v-9zm4.5 28.5v-5.3h-4.5v-9.3h4.5v9.3h9.4v5.3h-9.4zm13.7-5.3v5h-4.3v-5h4.3v-4.6h-4.3v4.6h-9.2 9.2v-4.9h4.3v4.9h9.7v-9.3h4.3v9.3h-4.3v5.3h-9.7v-5.3zm14-14.1h-8.9v-9.1h8.9v9.1z");
+const pathOrganicMtn = new Path2D("M0,100 Q15,70 30,100 T60,100 T90,100 T120,100 V150 H0 Z");
+const pathChainLink = new Path2D("M-20,-10 L20,-10 L28,0 L20,10 L-20,10 L-28,0 Z M-12,-4 L12,-4 L16,0 L12,4 L-12,4 L-16,0 Z");
+
+function drawAvocado(x, y) {
+    if (!avocado.alive) return;
+    ctx.save(); ctx.translate(x, y); ctx.scale(0.30, 0.30);
+    ctx.fillStyle = COLOR_DARK; ctx.fill(pathAvo);
+    ctx.fillStyle = COLOR_LIGHT; ctx.fill(pathFace);
+    ctx.restore();
+}
+
+function drawFork(x, y, h, upsideDown) {
+    ctx.fillStyle = P.d2;
+    const fw = 28; const hx = x + (fw/2) - 3;
+    if (upsideDown) {
+        ctx.fillRect(hx, 0, 6, h - 20); ctx.fillStyle = P.d1;
+        ctx.fillRect(x, h - 20, fw, 8); for(let i=0; i<4; i++) ctx.fillRect(x + (i * 8), h - 12, 4, 15); 
+    } else {
+        ctx.fillRect(hx, y + 20, 6, h - 20); ctx.fillStyle = P.d1;
+        ctx.fillRect(x, y + 12, fw, 8); for(let i=0; i<4; i++) ctx.fillRect(x + (i * 8), y, 4, 15); 
+    }
+}
+
+function drawSawCutter(x, gapY, isTop) {
+    const bladeX = x + 15; ctx.fillStyle = P.d2;
+    if (isTop) ctx.fillRect(bladeX - 6, 0, 12, gapY); else ctx.fillRect(bladeX - 6, gapY, 12, 320 - gapY);
+    ctx.save(); ctx.translate(bladeX, gapY); ctx.rotate(frames * 0.25 * (isTop ? 1 : -1));
+    ctx.fillStyle = P.d2; const numTeeth = 12; ctx.beginPath();
+    for (let i = 0; i < numTeeth; i++) {
+        const a = (i / numTeeth) * Math.PI * 2;
+        ctx.lineTo(Math.cos(a) * 25, Math.sin(a) * 25); ctx.lineTo(Math.cos(a + 0.2) * 38, Math.sin(a + 0.2) * 38);
+    }
+    ctx.closePath(); ctx.fill(); ctx.fillStyle = P.d1; ctx.fillRect(-6, -6, 12, 12); ctx.restore();
+}
+
+function createExplosion(x, y) {
+    for (let i = 0; i < 30; i++) {
+        particles.push({
+            x: x + 15, y: y + 20, vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
+            size: Math.random() * 5 + 2, life: 1.0, color: Math.random() > 0.5 ? COLOR_DARK : COLOR_LIGHT
+        });
+    }
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.035;
+        if (p.life <= 0) particles.splice(i, 1);
+        else {
+            ctx.save(); ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore();
+        }
+    }
+}
+
+function startCountdown() {
+    state = 'COUNTDOWN';
+    msg.style.display = 'none';
+    countdownEl.style.display = 'block';
+    let count = 3;
+    
+    const nextCount = () => {
+        if (count > 0) {
+            countdownEl.innerText = count;
+            playTrumpet(false);
+            count--;
+            setTimeout(nextCount, 1000);
+        } else if (count === 0) {
+            countdownEl.innerText = "GO!";
+            playTrumpet(true);
+            count--;
+            setTimeout(nextCount, 800);
+        } else {
+            countdownEl.style.display = 'none';
+            state = 'PLAY';
+            if (!musicInterval) startMusic();
+        }
+    };
+    nextCount();
+}
+
+function update() {
+    if (state === 'PLAY' || state === 'COUNTDOWN' || state === 'START') {
+        bgX -= (currentSpeed * 0.25);
+    }
+
+    if (state !== 'PLAY') return;
+    
+    if (avocado.alive) {
+        frames++;
+        avocado.v += avocado.gravity; avocado.y += avocado.v;
+        if (avocado.y + avocado.h > 320 || avocado.y < 0) triggerDeath();
+
+        if (score >= 30 && score < 50) {
+            bgAlphaOrg = Math.max(0, bgAlphaOrg - 0.02);
+            bgAlphaGeo = Math.min(1.0, bgAlphaGeo + 0.02);
+        } else if (score >= 50) {
+            bgAlphaGeo = Math.max(0, bgAlphaGeo - 0.02);
+            bgAlphaChains = Math.min(1.0, bgAlphaChains + 0.02);
+        }
+
+        if (frames % 90 === 0) {
+            const targetGap = 110;
+            const startingGap = 190;
+            let currentGap = (score < 80) ? startingGap - (startingGap - targetGap) * (score / 80) : targetGap;
+
+            if (score >= 50) {
+                obstacles.push({ type: 'SAW', x: 440, baseGapY: 160 + (Math.random() * 60 - 30), gapSize: currentGap + 15, phase: Math.random() * Math.PI, scored: false });
+            } else {
+                const topH = Math.floor(Math.random() * (320 - currentGap - 100)) + 50;
+                obstacles.push({ type: 'FORK', x: 400, top: topH, gap: currentGap, scored: false, phase: Math.random() * Math.PI * 2 });
+            }
+        }
+
+        obstacles.forEach(o => {
+            o.x -= currentSpeed;
+            if (o.type === 'FORK') {
+                let dy = 0; if (score > 10) {
+                    o.phase += 0.03; let ampFact = Math.min(1, (score - 10) / 10); dy = Math.sin(o.phase) * (50 * ampFact);
+                }
+                const curTop = o.top + dy;
+                if (avocado.x + 26 > o.x && avocado.x + 4 < o.x + 28) {
+                    if (avocado.y + 4 < curTop || avocado.y + 36 > curTop + o.gap) triggerDeath();
+                }
+            } else {
+                o.phase += 0.025; const curGapY = o.baseGapY + Math.sin(o.phase) * 60;
+                const topY = curGapY - (o.gapSize / 2); const bottomY = curGapY + (o.gapSize / 2);
+                const distT = Math.hypot((avocado.x + 15) - (o.x + 15), (avocado.y + 20) - topY);
+                const distB = Math.hypot((avocado.x + 15) - (o.x + 15), (avocado.y + 20) - bottomY);
+                const inX = avocado.x + 26 > o.x + 4 && avocado.x + 4 < o.x + 26;
+                if (distT < 42 || distB < 42 || (inX && (avocado.y < topY || avocado.y + 36 > bottomY))) triggerDeath();
+            }
+
+            if (!o.scored && o.x < avocado.x) {
+                score++; 
+                scoreDisplay.innerText = score.toString().padStart(3, '0');
+                o.scored = true;
+                if (score >= 11 && score <= 80) {
+                    let speedProg = (score - 11) / (80 - 11);
+                    currentSpeed = 2.4 + (speedProg * 2.6); 
+                } else if (score > 80) {
+                    currentSpeed = 5.0 + ((score - 80) * 0.02);
+                }
+            }
+        });
+    }
+    obstacles = obstacles.filter(o => o.x > -100);
+}
+
+function triggerDeath() {
+    if (!avocado.alive) return;
+    avocado.alive = false;
+    playTone(150, 'sawtooth', 0.2, 0.6);
+    createExplosion(avocado.x, avocado.y);
+    setTimeout(() => { 
+        state = 'GAMEOVER'; 
+        showUI(`YOU’RE GUAC NOW.<br><span style='font-size: 24px;'>Score ${score.toString().padStart(3, '0')}</span><br><span style='font-size: 16px;'>Click to restart.</span>`); 
+    }, 600);
+}
+
+function render() {
+    ctx.fillStyle = P.l2; ctx.fillRect(0, 0, 400, 320);
+
+    if (bgAlphaOrg > 0) {
+        ctx.save(); ctx.globalAlpha = bgAlphaOrg; ctx.fillStyle = P.l1;
+        const orgW = 300; let offX = ((bgX % orgW) + orgW) % orgW;
+        for (let i = -1; i < 2; i++) {
+            ctx.save(); ctx.translate(offX + (i * orgW), -55); ctx.scale(2.5, 2.5);
+            ctx.fill(pathOrganicMtn); ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    if (bgAlphaGeo > 0) {
+        ctx.save(); ctx.globalAlpha = bgAlphaGeo; ctx.fillStyle = P.l1;
+        const geoW = 120; let offX = ((bgX % geoW) + geoW) % geoW;
+        for (let i = -1; i < 5; i++) {
+            let bx = offX + (i * geoW);
+            ctx.beginPath(); ctx.moveTo(bx, 320); ctx.lineTo(bx + 60, 200); ctx.lineTo(bx + 120, 320); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    if (bgAlphaChains > 0) {
+        ctx.save(); ctx.globalAlpha = bgAlphaChains; ctx.fillStyle = P.l1; 
+        const spacingX = 120; let baseOffX = ((bgX % spacingX) + spacingX) % spacingX;
+        for (let d = -4; d < 5; d++) {
+            let startX = baseOffX + (d * spacingX);
+            for (let step = -3; step < 13; step++) {
+                let x = startX + (step * 30); let y = step * 30;
+                ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+                ctx.fill(pathChainLink, 'evenodd'); ctx.restore();
+            }
+        }
+        ctx.restore();
+    }
+    
+    obstacles.forEach(o => {
+        if (o.type === 'FORK') {
+            let dy = 0; if (score > 10) { let amp = Math.min(1, (score - 10) / 10); dy = Math.sin(o.phase) * (50 * amp); }
+            drawFork(o.x, 0, o.top + dy, true); drawFork(o.x, o.top + dy + o.gap, 320 - (o.top + dy + o.gap), false);
+        } else {
+            const curGapY = o.baseGapY + Math.sin(o.phase) * 60;
+            drawSawCutter(o.x, curGapY - (o.gapSize/2), true); drawSawCutter(o.x, curGapY + (o.gapSize/2), false);
+        }
+    });
+
+    updateParticles();
+    drawAvocado(avocado.x, avocado.y);
+    requestAnimationFrame(render);
+}
+
+function reset() {
+    score = 0; frames = 0; currentSpeed = 2.4; avocado.y = 150; avocado.v = 0; avocado.alive = true;
+    bgAlphaOrg = 1.0; bgAlphaGeo = 0.0; bgAlphaChains = 0.0; bgX = 0;
+    obstacles = []; particles = [];
+    scoreDisplay.innerText = '000';
+    startCountdown();
+}
+
+function showUI(text) { msg.innerHTML = text; msg.style.display = 'block'; }
+
+window.addEventListener('mousedown', (e) => { 
+    e.preventDefault();
+    if (state === 'START' || state === 'GAMEOVER') reset(); 
+    else if (state === 'PLAY' && avocado.alive) { 
+        avocado.v = avocado.jump; 
+        playTone(300, 'square', 0.08, 0.1); 
+    }
+});
+
+// Inicio inmediato de la pantalla START
+showUI('FLAPPY AVOCADO<br><span style="font-size: 16px;">CLICK TO START</span>');
+
+setInterval(update, 1000/60);
+render();
+</script>
+</body>
+</html>
