@@ -271,9 +271,7 @@ function playTrumpet(isFinal) {
     osc.start(); osc.stop(audioCtx.currentTime + (isFinal ? 0.8 : 0.3));
 }
 
-const NOTES = { A2: 110.00, Bb2: 116.54, C3: 130.81, D3: 146.83, Eb3: 155.56, E3: 164.81, F3: 174.61, G3: 196.00, Ab3: 207.65, A3: 220.00, B3: 246.94, C4: 261.63 };
-const SONG = ['A2', 'E3', 'A2', 'F3', 'E3', 'C3', 'Bb2', 'E3', 'A2', 'Eb3', 'A2', 'D3', 'C3', 'Ab3', 'G3', 'E3'];
-let currentNote = 0;
+// Game music handled by adaptive startMusic()
 
 // Title screen happy jingle notes - upbeat & cheerful
 const TITLE_NOTES = {
@@ -360,12 +358,165 @@ function playTone(freq, type, vol, dur) {
 
 function startMusic() {
     if (musicInterval) clearInterval(musicInterval);
-    musicInterval = setInterval(() => {
-        if (state === 'PLAY' && avocado.alive) {
-            playTone(NOTES[SONG[currentNote]], 'triangle', 0.06, 0.4);
-            currentNote = (currentNote + 1) % SONG.length;
+    currentNote = 0;
+
+    // ── MUSIC DESIGN ────────────────────────────────────────────────────────
+    // Score 0–9   : Phase 1 – cheerful, simple melody, slow tempo (280ms/beat)
+    // Score 10–24 : Phase 2 – melody + bouncy bass added, same tempo
+    // Score 25–44 : Phase 3 – tempo increases to 220ms, arpeggios in melody
+    // Score 45–69 : Phase 4 – tempo 170ms, minor-ish tension notes creep in,
+    //               high-hat percussion layer added
+    // Score 70+   : Phase 5 – full chaos: fast 130ms, dissonant intervals,
+    //               saw-wave lead, aggressive percussion
+
+    // All pitches in Hz
+    const N = {
+        C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
+        C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+        C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00,
+        Bb3:233.08, Bb4:466.16, Eb4:311.13, Fs4:369.99, Fs5:739.99,
+        // Percussion stand-ins
+        KICK: 55, HAT: 800, SNARE: 180
+    };
+
+    // Phase 1 – happy, major, bouncy (C major)
+    const MEL1 = [
+        {n:N.E4,d:1},{n:N.G4,d:1},{n:N.C5,d:2},{n:N.B4,d:1},{n:N.A4,d:1},
+        {n:N.G4,d:2},{n:N.E4,d:1},{n:N.D4,d:1},{n:N.C4,d:2},{n:N.E4,d:1},{n:N.G4,d:1},
+        {n:N.A4,d:2},{n:N.G4,d:1},{n:N.F4,d:1},{n:N.E4,d:2},{n:N.D4,d:2}
+    ];
+    const BASS1 = [
+        {n:N.C3,d:4},{n:N.G3,d:4},{n:N.A3,d:4},{n:N.F3,d:4}
+    ];
+
+    // Phase 2 – same melody, bass gets more active
+    const BASS2 = [
+        {n:N.C3,d:2},{n:N.E3,d:2},{n:N.G3,d:2},{n:N.B3,d:2},
+        {n:N.A3,d:2},{n:N.C4,d:2},{n:N.F3,d:2},{n:N.A3,d:2}
+    ];
+
+    // Phase 3 – melody with faster arpeggios, more energetic
+    const MEL3 = [
+        {n:N.C5,d:1},{n:N.E5,d:1},{n:N.G5,d:1},{n:N.E5,d:1},
+        {n:N.D5,d:1},{n:N.F5,d:1},{n:N.A5,d:1},{n:N.F5,d:1},
+        {n:N.E5,d:1},{n:N.C5,d:1},{n:N.G4,d:1},{n:N.E4,d:1},
+        {n:N.D5,d:1},{n:N.B4,d:1},{n:N.G4,d:1},{n:N.D4,d:1}
+    ];
+    const BASS3 = [
+        {n:N.C3,d:1},{n:N.G3,d:1},{n:N.C4,d:1},{n:N.G3,d:1},
+        {n:N.F3,d:1},{n:N.C4,d:1},{n:N.F3,d:1},{n:N.C3,d:1}
+    ];
+
+    // Phase 4 – tension, minor feel, faster
+    const MEL4 = [
+        {n:N.E5,d:1},{n:N.Eb4,d:1},{n:N.E5,d:1},{n:N.G5,d:1},
+        {n:N.Fs5,d:1},{n:N.E5,d:1},{n:N.D5,d:1},{n:N.C5,d:1},
+        {n:N.Bb4,d:1},{n:N.C5,d:1},{n:N.D5,d:1},{n:N.Eb4,d:1},
+        {n:N.E5,d:2},{n:N.G5,d:1},{n:N.Fs5,d:1}
+    ];
+    const BASS4 = [
+        {n:N.A3,d:1},{n:N.E3,d:1},{n:N.A3,d:1},{n:N.C4,d:1},
+        {n:N.F3,d:1},{n:N.C3,d:1},{n:N.Bb3,d:1},{n:N.F3,d:1}
+    ];
+
+    // Phase 5 – chaotic, dissonant, fast
+    const MEL5 = [
+        {n:N.A5,d:1},{n:N.G5,d:1},{n:N.Fs5,d:1},{n:N.E5,d:1},
+        {n:N.Eb4,d:1},{n:N.Fs4,d:1},{n:N.A5,d:1},{n:N.G5,d:1},
+        {n:N.Bb4,d:1},{n:N.A5,d:1},{n:N.G5,d:1},{n:N.Fs5,d:1},
+        {n:N.E5,d:1},{n:N.D5,d:1},{n:N.Eb4,d:1},{n:N.Fs4,d:1}
+    ];
+    const BASS5 = [
+        {n:N.A3,d:1},{n:N.Eb4,d:1},{n:N.A3,d:1},{n:N.Bb3,d:1},
+        {n:N.Fs4,d:1},{n:N.E3,d:1},{n:N.Eb4,d:1},{n:N.D3,d:1}
+    ];
+
+    let melIdx = 0, bassIdx = 0, beatCount = 0, bassBeatCount = 0;
+    let lastPhase = -1;
+
+    function getPhase() {
+        if (score < 10)  return 1;
+        if (score < 25)  return 2;
+        if (score < 45)  return 3;
+        if (score < 70)  return 4;
+        return 5;
+    }
+
+    function getTempo(phase) {
+        return [280, 260, 210, 165, 125][phase - 1];
+    }
+
+    function getMelody(phase) {
+        return [MEL1, MEL1, MEL3, MEL4, MEL5][phase - 1];
+    }
+
+    function getBass(phase) {
+        return [BASS1, BASS2, BASS3, BASS4, BASS5][phase - 1];
+    }
+
+    function scheduleNote() {
+        if (!avocado.alive || state !== 'PLAY') return;
+
+        const phase = getPhase();
+        const tempo = getTempo(phase);
+
+        // Phase transition reset
+        if (phase !== lastPhase) {
+            lastPhase = phase;
+            melIdx = 0; bassIdx = 0; beatCount = 0; bassBeatCount = 0;
         }
-    }, 250);
+
+        const mel = getMelody(phase);
+        const bas = getBass(phase);
+
+        // Melody voice
+        if (beatCount <= 0) {
+            const note = mel[melIdx % mel.length];
+            const waveType = phase >= 5 ? 'sawtooth' : phase >= 4 ? 'square' : 'square';
+            const vol = phase >= 5 ? 0.10 : phase >= 4 ? 0.08 : 0.07;
+            playTone(note.n, waveType, vol, (tempo * note.d * 0.001) * 0.85);
+            beatCount = note.d;
+            melIdx++;
+        }
+        beatCount--;
+
+        // Bass voice
+        if (bassBeatCount <= 0) {
+            const bass = bas[bassIdx % bas.length];
+            const bassVol = phase >= 4 ? 0.07 : 0.05;
+            playTone(bass.n, 'triangle', bassVol, (tempo * bass.d * 0.001) * 0.75);
+            bassBeatCount = bass.d;
+            bassIdx++;
+        }
+        bassBeatCount--;
+
+        // Percussion – starts phase 2, intensifies each phase
+        if (phase >= 2) {
+            const beat = (melIdx % 8);
+            // Kick on beat 0 and 4
+            if (beat === 0 || beat === 4) playTone(N.KICK, 'sine', 0.08 + phase * 0.01, 0.12);
+            // Snare on beat 2 and 6
+            if (beat === 2 || beat === 6) playTone(N.SNARE, 'sawtooth', 0.04 + phase * 0.008, 0.08);
+            // Hi-hat every beat from phase 4
+            if (phase >= 4) playTone(N.HAT, 'square', 0.025, 0.04);
+            // Extra frantic hits on phase 5
+            if (phase >= 5 && (beat === 1 || beat === 3 || beat === 5 || beat === 7)) {
+                playTone(N.HAT * 1.5, 'sawtooth', 0.015, 0.03);
+            }
+        }
+
+        // Schedule next note dynamically at current tempo
+        if (musicInterval !== null) {
+            musicInterval = setTimeout(scheduleNote, tempo);
+        }
+    }
+
+    // Use timeout chain instead of fixed interval so tempo can change
+    musicInterval = setTimeout(scheduleNote, getTempo(1));
+}
+
+function stopMusic() {
+    if (musicInterval !== null) { clearTimeout(musicInterval); musicInterval = null; }
 }
 
 // --- GAME STATE ---
@@ -460,7 +611,7 @@ function startCountdown() {
         } else {
             countdownEl.style.display = 'none';
             state = 'PLAY';
-            if (!musicInterval) startMusic();
+            startMusic();
         }
     };
     nextCount();
@@ -537,6 +688,7 @@ function update() {
 function triggerDeath() {
     if (!avocado.alive) return;
     avocado.alive = false;
+    stopMusic();
     playTone(150, 'sawtooth', 0.2, 0.6);
     createExplosion(avocado.x, avocado.y);
     setTimeout(() => { 
@@ -598,6 +750,7 @@ function render() {
 }
 
 function reset() {
+    stopMusic();
     score = 0; frames = 0; currentSpeed = 2.4; avocado.y = 150; avocado.v = 0; avocado.alive = true;
     bgAlphaOrg = 1.0; bgAlphaGeo = 0.0; bgAlphaChains = 0.0; bgX = 0;
     obstacles = []; particles = [];
