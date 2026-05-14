@@ -94,6 +94,100 @@
             display: none;
             text-shadow: 4px 4px var(--gb-light);
         }
+
+        /* Loading screen */
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: var(--gb-darkest);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading-label {
+            font-family: 'Jersey 10', sans-serif;
+            font-size: 14px;
+            color: var(--gb-light);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        #loading-bar-wrap {
+            width: 160px;
+            height: 10px;
+            border: 3px solid var(--gb-light);
+        }
+        #loading-bar-fill {
+            height: 100%;
+            background: var(--gb-light);
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+        #ready-text {
+            font-family: 'Jersey 10', sans-serif;
+            font-size: 44px;
+            color: var(--gb-lightest);
+            letter-spacing: 4px;
+            margin-top: 16px;
+            display: none;
+            animation: blink 0.7s step-end infinite;
+        }
+
+        /* Title screen */
+        #title-screen {
+            position: absolute;
+            inset: 0;
+            background: var(--gb-lightest);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            pointer-events: none;
+            gap: 0px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        #title-screen.visible {
+            opacity: 1;
+        }
+
+        #title-screen svg {
+            width: 130px;
+            height: auto;
+            margin-bottom: 6px;
+        }
+
+        #title-game-name {
+            font-family: 'Jersey 10', sans-serif;
+            font-size: 52px;
+            color: var(--gb-darkest);
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 1px;
+        }
+
+        #title-click {
+            font-family: 'Jersey 10', sans-serif;
+            font-size: 22px;
+            color: var(--gb-darkest);
+            text-align: center;
+            margin-top: 10px;
+            animation: blink 0.9s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -105,6 +199,45 @@
         <div id="score-display" class="hud">000</div>
         <div id="countdown-text">3</div>
         <div id="msg" class="screen-text"></div>
+    </div>
+
+    <!-- Loading screen -->
+    <div id="loading-screen">
+        <div id="loading-label">LOADING</div>
+        <div id="loading-bar-wrap"><div id="loading-bar-fill"></div></div>
+        <div id="ready-text">READY</div>
+    </div>
+
+    <!-- Title screen -->
+    <div id="title-screen">
+        <svg width="100%" height="100%" viewBox="0 0 181 132" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+            <g transform="matrix(1,0,0,1,-109.647547,-56.668595)">
+                <g transform="matrix(4.051593,0,0,4.051593,-2973.132769,-2497.67422)">
+                    <g transform="matrix(0.457996,0,0,0.457996,434.06948,365.766467)">
+                        <g transform="matrix(1.244506,0,0,1.270903,-249.742714,103.725589)">
+                            <ellipse cx="780.664" cy="382.592" rx="6.613" ry="9.471" style="fill:rgb(15,56,15);"/>
+                        </g>
+                        <g transform="matrix(1.244506,0,0,1.270903,-168.820455,103.725589)">
+                            <ellipse cx="780.664" cy="382.592" rx="6.613" ry="9.471" style="fill:rgb(15,56,15);"/>
+                        </g>
+                        <g transform="matrix(-1.416514,0,-0,-1.847795,1920.473887,1459.076225)">
+                            <path d="M804.716,452.832C804.698,452.552 804.689,452.271 804.689,451.989C804.689,444.836 810.497,439.028 817.651,439.028C824.804,439.028 830.612,444.836 830.612,451.989C830.612,452.25 830.605,452.51 830.589,452.769C829.243,452.28 827.599,451.989 825.667,451.989C822.585,451.989 819.798,452.967 817.807,454.54C815.815,452.967 813.029,451.989 809.946,451.989C807.944,451.989 806.175,452.302 804.716,452.832Z" style="fill:rgb(15,56,15);"/>
+                        </g>
+                        <g transform="matrix(-1.416514,0,-0,-1.847795,1920.473887,1459.076225)">
+                            <path d="M826.686,442.699C825.324,445.449 821.791,447.411 817.651,447.411C813.51,447.411 809.977,445.449 808.615,442.699C810.951,440.427 814.138,439.028 817.651,439.028C821.163,439.028 824.35,440.427 826.686,442.699Z" style="fill:rgb(139,172,15);"/>
+                        </g>
+                        <g transform="matrix(-1.416514,0,-0,-1.847795,1920.473887,1459.076225)">
+                            <path d="M803.95,452.861C803.931,452.571 803.922,452.281 803.922,451.989C803.922,444.475 810.136,438.44 817.651,438.44C825.165,438.44 831.379,444.475 831.379,451.989C831.379,452.259 831.371,452.528 831.355,452.796C831.343,452.992 831.204,453.171 830.984,453.273C830.764,453.374 830.493,453.384 830.261,453.3C829.005,452.844 827.469,452.577 825.667,452.577C822.801,452.577 820.209,453.487 818.357,454.95C818.212,455.064 818.014,455.128 817.807,455.128C817.599,455.128 817.401,455.064 817.257,454.95C815.404,453.487 812.813,452.577 809.946,452.577C808.07,452.577 806.412,452.866 805.044,453.363C804.813,453.447 804.542,453.437 804.322,453.336C804.103,453.235 803.963,453.057 803.95,452.861ZM829.846,451.904C829.8,445.15 824.415,439.615 817.651,439.615C810.866,439.615 805.469,445.182 805.455,451.964C806.776,451.606 808.285,451.402 809.946,451.402C812.969,451.402 815.727,452.281 817.807,453.724C819.887,452.281 822.644,451.402 825.667,451.402C827.241,451.402 828.635,451.585 829.846,451.904Z" style="fill:rgb(15,56,15);"/>
+                        </g>
+                        <g transform="matrix(0.847171,0,-0,0.847171,75.920385,251.346964)">
+                            <path d="M834.635,420.156C834.099,419.62 834.099,418.75 834.635,418.214C835.171,417.678 836.041,417.678 836.577,418.214C841.509,423.145 841.873,428.932 839.133,433.472C836.491,437.851 830.816,441.126 823.277,441.126C818.228,441.126 813.62,439.222 810.133,436.093C806.647,439.222 802.039,441.126 796.99,441.126C790.546,441.126 785.887,438.742 783.097,435.447C778.79,430.359 778.853,423.05 783.689,418.214C784.225,417.678 785.096,417.678 785.632,418.214C786.168,418.75 786.168,419.62 785.632,420.156C781.839,423.949 781.816,429.682 785.194,433.672C787.555,436.46 791.537,438.379 796.99,438.379C801.758,438.379 806.068,436.405 809.148,433.232C809.406,432.965 809.762,432.815 810.133,432.815C810.505,432.815 810.86,432.965 811.119,433.232C814.199,436.405 818.509,438.379 823.277,438.379C829.662,438.379 834.543,435.762 836.781,432.053C838.922,428.506 838.488,424.009 834.635,420.156Z" style="fill:rgb(15,56,15);"/>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+        <div id="title-game-name">FLAPPY AVOCADO</div>
+        <div id="title-click">CLICK TO START</div>
     </div>
 </div>
 
@@ -119,13 +252,16 @@ const P = { d1: '#0f380f', d2: '#306230', l1: '#8bac0f', l2: '#9bbc0f' };
 const COLOR_DARK = "#143511"; 
 const COLOR_LIGHT = "#91B31E"; 
 
-// --- AUDIO (Trompeta y Música) ---
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
+// Create AudioContext immediately — it starts suspended by browser policy
+let audioCtx = new AudioCtx();
 let musicInterval = null;
+let titleMusicInterval = null;
+
+// --- AUDIO SETUP ---
 
 function playTrumpet(isFinal) {
-    if(!audioCtx) audioCtx = new AudioCtx();
+    if(!audioCtx || audioCtx.state === 'suspended') return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'sawtooth'; 
@@ -141,8 +277,79 @@ const NOTES = { A2: 110.00, Bb2: 116.54, C3: 130.81, D3: 146.83, Eb3: 155.56, E3
 const SONG = ['A2', 'E3', 'A2', 'F3', 'E3', 'C3', 'Bb2', 'E3', 'A2', 'Eb3', 'A2', 'D3', 'C3', 'Ab3', 'G3', 'E3'];
 let currentNote = 0;
 
+// Title screen happy jingle notes - upbeat & cheerful
+const TITLE_NOTES = {
+    C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23,
+    G4: 392.00, A4: 440.00, B4: 493.88, C5: 523.25,
+    D5: 587.33, E5: 659.25, G5: 783.99
+};
+// Melody: cheerful bouncy tune
+const TITLE_MELODY = [
+    {n:'E4',d:2},{n:'G4',d:1},{n:'A4',d:2},{n:'G4',d:1},
+    {n:'E4',d:2},{n:'C4',d:2},{n:'D4',d:2},{n:'E4',d:2},
+    {n:'G4',d:2},{n:'A4',d:2},{n:'B4',d:2},{n:'C5',d:4},
+    {n:'B4',d:2},{n:'A4',d:2},{n:'G4',d:2},{n:'E4',d:2},
+    {n:'F4',d:2},{n:'G4',d:2},{n:'A4',d:4},{n:'G4',d:2},
+    {n:'F4',d:2},{n:'E4',d:2},{n:'D4',d:2},{n:'C4',d:4}
+];
+// Bass line
+const TITLE_BASS = [
+    {n:'C4',d:4},{n:'G4',d:4},{n:'A4',d:4},{n:'E4',d:4},
+    {n:'F4',d:4},{n:'G4',d:4},{n:'C4',d:8}
+];
+let titleMelodyIdx = 0;
+let titleBassIdx = 0;
+let titleBeatCount = 0;
+let titleBassCount = 0;
+
+function playTitleTone(freq, type, vol, dur) {
+    if(!audioCtx || audioCtx.state === 'suspended') return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function startTitleMusic() {
+    if (titleMusicInterval) clearInterval(titleMusicInterval);
+    titleMelodyIdx = 0; titleBassIdx = 0;
+    titleBeatCount = 0; titleBassCount = 0;
+
+    titleMusicInterval = setInterval(() => {
+        if (appState !== 'TITLE') { clearInterval(titleMusicInterval); titleMusicInterval = null; return; }
+        // Melody tick
+        if (titleBeatCount <= 0) {
+            const note = TITLE_MELODY[titleMelodyIdx % TITLE_MELODY.length];
+            playTitleTone(TITLE_NOTES[note.n], 'square', 0.07, note.d * 0.12);
+            titleBeatCount = note.d;
+            titleMelodyIdx++;
+        }
+        titleBeatCount--;
+        // Bass tick
+        if (titleBassCount <= 0) {
+            const bass = TITLE_BASS[titleBassIdx % TITLE_BASS.length];
+            playTitleTone(TITLE_NOTES[bass.n] / 2, 'triangle', 0.05, bass.d * 0.12);
+            titleBassCount = bass.d;
+            titleBassIdx++;
+        }
+        titleBassCount--;
+        // Percussion
+        if ((titleMelodyIdx % 4) === 0) {
+            playTitleTone(80, 'sawtooth', 0.04, 0.08);
+        }
+    }, 100);
+}
+
+function stopTitleMusic() {
+    if (titleMusicInterval) { clearInterval(titleMusicInterval); titleMusicInterval = null; }
+}
+
 function playTone(freq, type, vol, dur) {
-    if(!audioCtx) return;
+    if(!audioCtx || audioCtx.state === 'suspended') return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = type;
@@ -154,7 +361,6 @@ function playTone(freq, type, vol, dur) {
 }
 
 function startMusic() {
-    if (!audioCtx) audioCtx = new AudioCtx();
     if (musicInterval) clearInterval(musicInterval);
     musicInterval = setInterval(() => {
         if (state === 'PLAY' && avocado.alive) {
@@ -398,22 +604,80 @@ function reset() {
     bgAlphaOrg = 1.0; bgAlphaGeo = 0.0; bgAlphaChains = 0.0; bgX = 0;
     obstacles = []; particles = [];
     scoreDisplay.innerText = '000';
+    msg.style.display = 'none';
     startCountdown();
 }
 
 function showUI(text) { msg.innerHTML = text; msg.style.display = 'block'; }
 
-window.addEventListener('mousedown', (e) => { 
+// --- LOADING SCREEN FLOW ---
+const loadingScreen = document.getElementById('loading-screen');
+const loadingBarFill = document.getElementById('loading-bar-fill');
+const loadingLabel = document.getElementById('loading-label');
+const readyText = document.getElementById('ready-text');
+const titleScreen = document.getElementById('title-screen');
+
+let appState = 'LOADING'; // LOADING → READY → TITLE → GAME
+
+// Animate the loading bar automatically
+let loadPct = 0;
+const loadInterval = setInterval(() => {
+    loadPct += Math.random() * 18 + 4;
+    if (loadPct >= 100) {
+        loadPct = 100;
+        loadingBarFill.style.width = '100%';
+        clearInterval(loadInterval);
+        setTimeout(() => {
+            loadingLabel.style.display = 'none';
+            loadingBarFill.parentElement.style.display = 'none';
+            readyText.style.display = 'block';
+            appState = 'READY';
+        }, 200);
+    } else {
+        loadingBarFill.style.width = loadPct + '%';
+    }
+}, 80);
+
+function showTitleScreen() {
+    // Fade out loading screen
+    loadingScreen.classList.add('fade-out');
+    setTimeout(() => { loadingScreen.style.display = 'none'; }, 550);
+    // Fade in title screen
+    titleScreen.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        titleScreen.classList.add('visible');
+    }));
+    startTitleMusic();
+    appState = 'TITLE';
+}
+
+window.addEventListener('mousedown', (e) => {
     e.preventDefault();
-    if (state === 'START' || state === 'GAMEOVER') reset(); 
-    else if (state === 'PLAY' && avocado.alive) { 
-        avocado.v = avocado.jump; 
-        playTone(300, 'square', 0.08, 0.1); 
+
+    // Unlock AudioContext on first gesture (browser policy)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    if (appState === 'READY') {
+        showTitleScreen();
+        return;
+    }
+    if (appState === 'TITLE') {
+        stopTitleMusic();
+        titleScreen.classList.remove('visible');
+        setTimeout(() => { titleScreen.style.display = 'none'; }, 600);
+        appState = 'GAME';
+        reset();
+        return;
+    }
+    if (appState === 'GAME') {
+        if (state === 'GAMEOVER') {
+            reset();
+        } else if (state === 'PLAY' && avocado.alive) {
+            avocado.v = avocado.jump;
+            playTone(300, 'square', 0.08, 0.1);
+        }
     }
 });
-
-// Inicio inmediato de la pantalla START
-showUI('FLAPPY AVOCADO<br><span style="font-size: 16px;">CLICK TO START</span>');
 
 setInterval(update, 1000/60);
 render();
