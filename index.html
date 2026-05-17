@@ -536,14 +536,35 @@ let particles = [];
 // Paths
 const pathAvo = new Path2D("m89.7 56.3v-9.9h-4.7v-4.6h-4.4v-5.1h-5.3v-23.5h-4.7v-4.4h-4.9v-4.4h-32.1v4.4h-5.1v4.4h-4.4v23.5h-4.4v4.9h-5.1v4.8h-4.5v9.6h-4.4v52.3h4.3v9.4h9.6v4.4h9.9-1.1v4.6h42.8-0.6v-4.4h10.2v-4.4h8.9v-9.6h5.3v-52h-5.3z");
 const pathFace = new Path2D("m75.1 70.4v-9.6h-4.5v-4.2h-4.9v-5.5h-32.1v5.1h-5.1v4.5h-4.4v9.7h-4.4v18.6h4.4v10h4.4v4.9h9.6v4.4h23.3v-4.5h9.2v-4.8h4.4v-10h5.1v-18.6h-5zm-41.6-4.6h9.6v9h-9.6v-9zm4.5 28.5v-5.3h-4.5v-9.3h4.5v9.3h9.4v5.3h-9.4zm13.7-5.3v5h-4.3v-5h4.3v-4.6h-4.3v4.6h-9.2 9.2v-4.9h4.3v4.9h9.7v-9.3h4.3v9.3h-4.3v5.3h-9.7v-5.3zm14-14.1h-8.9v-9.1h8.9v9.1z");
+
+// Happy face paths (from design_2.svg) — scaled to same ~100x135 viewBox
+const pathAvoHappy = new Path2D("M94.43,56.96L94.43,46.36L89.46,46.36L89.46,41.06L83.83,41.06L83.83,35.65L78.98,35.65L78.98,9.71L74.12,9.71L74.12,4.86L68.49,4.86L68.49,0L31.51,0L31.51,4.86L25.88,4.86L25.88,9.71L21.02,9.71L21.02,35.65L16.17,35.65L16.17,41.06L10.54,41.06L10.54,46.36L5.57,46.36L5.57,56.96L0.71,56.96L0.71,114.69L5.46,114.69L5.46,125.07L16.06,125.07L16.06,129.92L25.77,129.92L25.77,135L74.23,135L74.23,129.92L83.94,129.92L83.94,125.07L94.54,125.07L94.54,114.69L99.29,114.69L99.29,56.96L94.43,56.96Z");
+const pathFaceHappy = new Path2D("M78.48,71.71L83.34,71.71L83.34,92.24L78.48,92.24L78.48,103.28L73.62,103.28L73.62,108.69L63.02,108.69L63.02,113.55L36.97,113.55L36.97,108.69L26.37,108.69L26.37,103.28L21.51,103.28L21.51,92.24L16.65,92.24L16.65,71.71L21.51,71.71L21.51,61L26.37,61L26.37,56.03L32,56.03L32,50.4L67.99,50.4L67.99,56.03L73.62,56.03L73.62,61L78.48,61L78.48,71.71ZM31.9,66.64L31.9,76.57L42.5,76.57L42.5,66.64L31.9,66.64ZM68.1,76.57L68.1,66.64L57.5,66.64L57.5,76.57L68.1,76.57ZM68.1,81.98L31.89,81.98L31.89,92.25L36.86,92.25L36.86,98.1L63.13,98.1L63.13,92.25L68.1,92.25L68.1,81.98Z");
+
 const pathOrganicMtn = new Path2D("M0,100 Q15,70 30,100 T60,100 T90,100 T120,100 V150 H0 Z");
 const pathChainLink = new Path2D("M-20,-10 L20,-10 L28,0 L20,10 L-20,10 L-28,0 Z M-12,-4 L12,-4 L16,0 L12,4 L-12,4 L-16,0 Z");
 
+// How many frames to show the happy face after scoring
+let happyTimer = 0;
+const HAPPY_DURATION = 38; // ~0.63s at 60fps
+
 function drawAvocado(x, y) {
     if (!avocado.alive) return;
-    ctx.save(); ctx.translate(x, y); ctx.scale(0.30, 0.30);
-    ctx.fillStyle = COLOR_DARK; ctx.fill(pathAvo);
-    ctx.fillStyle = COLOR_LIGHT; ctx.fill(pathFace);
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (happyTimer > 0) {
+        // Normal renders at 89.7 * 0.30 = 26.91w,  114.7 * 0.30 = 34.41h
+        // Happy viewBox is 99.29 × 135 → scale to same pixel size
+        ctx.scale(26.91 / 99.29, 34.41 / 135);
+        ctx.fillStyle = COLOR_DARK; ctx.fill(pathAvoHappy);
+        ctx.fillStyle = COLOR_LIGHT; ctx.fill(pathFaceHappy);
+    } else {
+        ctx.scale(0.30, 0.30);
+        ctx.fillStyle = COLOR_DARK; ctx.fill(pathAvo);
+        ctx.fillStyle = COLOR_LIGHT; ctx.fill(pathFace);
+    }
+
     ctx.restore();
 }
 
@@ -626,6 +647,7 @@ function update() {
     
     if (avocado.alive) {
         frames++;
+        if (happyTimer > 0) happyTimer--;
         avocado.v += avocado.gravity; avocado.y += avocado.v;
         if (avocado.y + avocado.h > 320 || avocado.y < 0) triggerDeath();
 
@@ -673,6 +695,7 @@ function update() {
                 score++; 
                 scoreDisplay.innerText = score.toString().padStart(3, '0');
                 o.scored = true;
+                happyTimer = HAPPY_DURATION; // ← show happy face!
                 if (score >= 11 && score <= 80) {
                     let speedProg = (score - 11) / (80 - 11);
                     currentSpeed = 2.4 + (speedProg * 2.6); 
@@ -751,7 +774,7 @@ function render() {
 
 function reset() {
     stopMusic();
-    score = 0; frames = 0; currentSpeed = 2.4; avocado.y = 150; avocado.v = 0; avocado.alive = true;
+    score = 0; frames = 0; happyTimer = 0; currentSpeed = 2.4; avocado.y = 150; avocado.v = 0; avocado.alive = true;
     bgAlphaOrg = 1.0; bgAlphaGeo = 0.0; bgAlphaChains = 0.0; bgX = 0;
     obstacles = []; particles = [];
     scoreDisplay.innerText = '000';
