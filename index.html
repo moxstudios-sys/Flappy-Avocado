@@ -665,7 +665,7 @@ function update() {
             let currentGap = (score < 80) ? startingGap - (startingGap - targetGap) * (score / 80) : targetGap;
 
             if (score >= 50) {
-                obstacles.push({ type: 'SAW', x: 440, baseGapY: 160 + (Math.random() * 60 - 30), gapSize: currentGap + 15, phase: Math.random() * Math.PI, scored: false });
+                obstacles.push({ type: 'SAW', x: 440, baseGapY: 160 + (Math.random() * 60 - 30), gapSize: currentGap + 15, phase: Math.random() * Math.PI, openPhase: Math.random() * Math.PI * 2, scored: false });
             } else {
                 const topH = Math.floor(Math.random() * (320 - currentGap - 100)) + 50;
                 obstacles.push({ type: 'FORK', x: 400, top: topH, gap: currentGap, scored: false, phase: Math.random() * Math.PI * 2 });
@@ -683,8 +683,19 @@ function update() {
                     if (avocado.y + 4 < curTop || avocado.y + 36 > curTop + o.gap) triggerDeath();
                 }
             } else {
-                o.phase += 0.025; const curGapY = o.baseGapY + Math.sin(o.phase) * 60;
-                const topY = curGapY - (o.gapSize / 2); const bottomY = curGapY + (o.gapSize / 2);
+                o.phase += 0.025;
+                o.openPhase += 0.018; // ease open/close cycle
+                const eased = (1 - Math.cos(o.openPhase)) / 2;
+                // blade visual radius=38, collision radius=38
+                // free space = currentOpenGap - 2*38, needs to be > avocado.h(40) + margin(20)
+                // so minGap = 40 + 20 + 2*38 = 136px
+                const minGap = 136;
+                const maxGap = Math.max(o.gapSize, minGap + 40); // fully open — always bigger than min
+                const currentOpenGap = minGap + (maxGap - minGap) * eased;
+                const curGapY = o.baseGapY + Math.sin(o.phase) * 60;
+                const topY = curGapY - (currentOpenGap / 2);
+                const bottomY = curGapY + (currentOpenGap / 2);
+                o._topY = topY; o._bottomY = bottomY; // cache for render
                 const distT = Math.hypot((avocado.x + 15) - (o.x + 15), (avocado.y + 20) - topY);
                 const distB = Math.hypot((avocado.x + 15) - (o.x + 15), (avocado.y + 20) - bottomY);
                 const inX = avocado.x + 26 > o.x + 4 && avocado.x + 4 < o.x + 26;
@@ -762,8 +773,10 @@ function render() {
             let dy = 0; if (score > 10) { let amp = Math.min(1, (score - 10) / 10); dy = Math.sin(o.phase) * (50 * amp); }
             drawFork(o.x, 0, o.top + dy, true); drawFork(o.x, o.top + dy + o.gap, 320 - (o.top + dy + o.gap), false);
         } else {
-            const curGapY = o.baseGapY + Math.sin(o.phase) * 60;
-            drawSawCutter(o.x, curGapY - (o.gapSize/2), true); drawSawCutter(o.x, curGapY + (o.gapSize/2), false);
+            const topY = o._topY !== undefined ? o._topY : o.baseGapY - (o.gapSize / 2);
+            const bottomY = o._bottomY !== undefined ? o._bottomY : o.baseGapY + (o.gapSize / 2);
+            drawSawCutter(o.x, topY, true);
+            drawSawCutter(o.x, bottomY, false);
         }
     });
 
